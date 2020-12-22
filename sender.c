@@ -5,12 +5,15 @@
 #include <arpa/inet.h>
 #define SIZE 1024
 
-void send_file(FILE *fp, int sockfd){
+void send_file(FILE *fp, int sockfd)
+{
   int n;
   char data[SIZE] = {0};
 
-  while(fgets(data, SIZE, fp) != NULL) {
-    if (send(sockfd, data, sizeof(data), 0) == -1) {
+  while (fgets(data, SIZE, fp) != NULL)
+  {
+    if (send(sockfd, data, sizeof(data), 0) == -1)
+    {
       perror("[-]Error in sending file.");
       exit(1);
     }
@@ -18,7 +21,8 @@ void send_file(FILE *fp, int sockfd){
   }
 }
 
-int main(){
+int main()
+{
   char *ip = "127.0.0.1";
   int port = 5060;
   int e;
@@ -29,7 +33,8 @@ int main(){
   char *filename = "send.txt";
 
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  if(sockfd < 0) {
+  if (sockfd < 0)
+  {
     perror("[-]Error in socket");
     exit(1);
   }
@@ -39,15 +44,17 @@ int main(){
   server_addr.sin_port = port;
   server_addr.sin_addr.s_addr = inet_addr(ip);
 
-  e = connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr));
-  if(e == -1) {
+  e = connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr));
+  if (e == -1)
+  {
     perror("[-]Error in socket");
     exit(1);
   }
- printf("[+]Connected to measure.\n");
+  printf("[+]Connected to measure.\n");
 
   fp = fopen(filename, "r");
-  if (fp == NULL) {
+  if (fp == NULL)
+  {
     perror("[-]Error in reading file.");
     exit(1);
   }
