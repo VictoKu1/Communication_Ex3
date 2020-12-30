@@ -1,69 +1,108 @@
+#include <time.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
-#define SIZE 1024
+#include <string.h>
+#include <unistd.h>
 
-void send_file(FILE *fp, int sockfd)
-{
-  int n;
-  char data[SIZE] = {0};
+#define BUFFSIZE 1000
 
-  while (fgets(data, SIZE, fp) != NULL)
-  {
-    if (send(sockfd, data, sizeof(data), 0) == -1)
+int main(){
+
+	//Socket Configuration
+	struct sockaddr_in serverAddr, clientAddr;
+	int sockfd, nsockfd;
+	char buff[BUFFSIZE] ;
+	int PORT = 5060;
+	char* IP = "127.0.0.1";
+
+	FILE *filePointer; 
+
+	//Create Socket
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if(sockfd < 0){
+		printf("%s\n", "Error creating Client socket.");
+		return 0;
+	}
+
+	//create connection with server
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_port = htons(PORT);
+	serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");//htonl(INADDR_ANY);
+	memset(&(serverAddr.sin_zero), '\0', 0);
+
+	if(connect(sockfd, (struct sockaddr*)&serverAddr, sizeof(struct sockaddr)) < 0){
+		printf("%s\n", "Error creating connection.");
+		return 0;
+	}
+
+	printf("%s\n","Connected with Server." );
+
+
+	//Change the CC algorithm
+	int len = sizeof(buff);
+
+    if (getsockopt(sockfd, IPPROTO_TCP, TCP_CONGESTION, buff, &len) != 0)
     {
-      perror("[-]Error in sending file.");
-      exit(1);
+        perror("getsockopt");
+        return -1;
     }
-    bzero(data, SIZE);
-  }
-}
+    printf("Current CC Algorithm: %s\n", buff);
 
-int main()
-{
-  char *ip = "127.0.0.1";
-  int port = 5060;
-  int e;
+	for(int k =0; k<2; k++){
+		int byteswritten = 0;
+	
+		for(int i=0 ; i < 5; i++){
+			int lll = 0;
+			//sending file
+			filePointer = fopen("1gb.txt", "rb");
+			if(filePointer == NULL){
+				printf("%s\n", "File not found.");
+			}else{
+				printf("%s%d\n", "sending file ", i+1);
+				while(fread ( buff, 1, sizeof(buff), filePointer )) { 
+		           // Print the dataToBeRead  
 
-  int sockfd;
-  struct sockaddr_in server_addr;
-  FILE *fp;
-  char *filename = "send.txt";
+					byteswritten = send (sockfd, &buff[i], 1, 0);
+					
+					//lll += byteswritten;
+					//for(int i=0; i<strlen(buff); i++){
+						//byteswritten = send (sockfd, &buff[i], 1, 0);
+					//}
+		        } 
+			}
 
-  sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  if (sockfd < 0)
-  {
-    perror("[-]Error in socket");
-    exit(1);
-  }
-  printf("TCP socket successfully opened.\n");
+			//printf("%s%d\n", "Bytes: ", lll);
+			char buf[BUFFSIZE] = "$";
+			byteswritten = send (sockfd, buf, sizeof(buf), 0);
+			fclose(filePointer);
+		}
 
-  server_addr.sin_family = AF_INET;
-  server_addr.sin_port = port;
-  server_addr.sin_addr.s_addr = inet_addr(ip);
+		//Change CC algorithm
+	    strcpy(buff, "reno");
+	    len = strlen(buff);
+	    if (setsockopt(sockfd, IPPROTO_TCP, TCP_CONGESTION, buff, len) != 0)
+	    {
+	        perror("setsockopt");
+	        return -1;
+	    }
 
-  e = connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr));
-  if (e == -1)
-  {
-    perror("[-]Error in socket");
-    exit(1);
-  }
-  printf("[+]Connected to measure.\n");
+	    len = sizeof(buff);
+	    if (getsockopt(sockfd, IPPROTO_TCP, TCP_CONGESTION, buff, &len) != 0)
+	    {
+	        perror("getsockopt");
+	        return -1;
+	    }
 
-  fp = fopen(filename, "r");
-  if (fp == NULL)
-  {
-    perror("[-]Error in reading file.");
-    exit(1);
-  }
-
-  send_file(fp, sockfd);
-  printf("[+]File data sent successfully.\n");
-
-  printf("[+]Closing the connection.\n");
-  close(sockfd);
-
-  return 0;
+	    if(k == 0){
+	    	printf("CC Algorithm Changed to: %s\n", buff);
+	    }
+	}
+	
+	close(sockfd);
+	return 0;
 }
