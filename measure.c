@@ -1,6 +1,5 @@
 #include <time.h>
 #include <stdio.h>
-#include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -12,7 +11,7 @@
 #define BUFFSIZE 1000
 
 int main(){
-	time_t startTime, endTime;
+	clock_t startTime, endTime;
 	
 
 	//Socket Configuration
@@ -54,35 +53,40 @@ int main(){
 	addr_size = sizeof(struct sockaddr);
 	//Accept incoming connections on new socket
 	nsockfd = accept(sockfd, (struct sockaddr*)&clientAddr, &addr_size);
-
+	if(nsockfd < 0)
+	{
+		perror("Couldn't accept connection\n");
+	}
 	// Read from the client socket
 	int bytesRead = 0;
 	
-	int timesBeforeCC[5] = {0};
+	float timesBeforeCC[5] = {0};
 	int len = 0;
 
 	for(int k =0; k<2; k++){
-		startTime = time(NULL);
+		startTime = clock();
 		int i =0;
 		do{
 			memset(buff, '\0', sizeof(buff));
-			bytesRead = recv(nsockfd, buff, 1, 0);
-
-			if(strcmp(buff, "$") == 0){
-				printf("%d%s\n\n", i+1, " Files Recieved..");
-				endTime = time(NULL);
-				timesBeforeCC[i] = (int)endTime - (int)startTime;
-				startTime = time(NULL);
+			bytesRead = recv(nsockfd, buff, BUFFSIZE, 0);
+			if(bytesRead =! 0 && strcmp(buff, "$") != 0){
+				//printf("%d%s\n", i+1, " Files Received..");
+				endTime = clock();
+				timesBeforeCC[i] = (((float)endTime - startTime)/CLOCKS_PER_SEC);
+				printf(" File %d received in %f seconds.\n\n",i+1,timesBeforeCC[i]);
+				startTime = clock();
 				i++;
 			}
+
 			//printf("%s", buff);
 		}while(bytesRead > 0);
 
 
-		int sum =0;
+		float sum =0;
 		for(int j = 0; j<5; j++){
 			sum += timesBeforeCC[j];
-			//printf("%s%d%d\n", "Time ", j+1, timesBeforeCC[j]);
+			//printf("the sum is: %f\n",sum);
+			//printf("%s%d%fl\n", "Time ", j+1, timesBeforeCC[j]);
 		}
 
 		if(k==0){
