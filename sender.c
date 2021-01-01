@@ -1,6 +1,5 @@
 #include <time.h>
 #include <stdio.h>
-#include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -55,11 +54,10 @@ int main(){
 
 	for(int k =0; k<2; k++){
 		int byteswritten = 0;
-	
 		for(int i=0 ; i < 5; i++){
 			int lll = 0;
 			//sending file
-			filePointer = fopen("1gb.txt", "rb");
+			filePointer = fopen("test.txt", "rb");
 			if(filePointer == NULL){
 				printf("%s\n", "File not found.");
 			}else{
@@ -67,8 +65,7 @@ int main(){
 				while(fread ( buff, 1, sizeof(buff), filePointer )) { 
 		           // Print the dataToBeRead  
 
-					byteswritten = send (sockfd, &buff[i], 1, 0);
-					
+					byteswritten = send (sockfd, &buff, BUFFSIZE, 0);
 					//lll += byteswritten;
 					//for(int i=0; i<strlen(buff); i++){
 						//byteswritten = send (sockfd, &buff[i], 1, 0);
@@ -78,7 +75,7 @@ int main(){
 
 			//printf("%s%d\n", "Bytes: ", lll);
 			char buf[BUFFSIZE] = "$";
-			byteswritten = send (sockfd, buf, sizeof(buf), 0);
+			byteswritten = send (sockfd, buf, BUFFSIZE, 0);
 			fclose(filePointer);
 		}
 
